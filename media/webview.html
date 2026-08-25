@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OI Contest Schedule</title>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f5f7fa; margin: 0; padding: 20px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 { text-align: center; color: #2c3e50; }
+    .meta { text-align: center; color: #7f8c8d; font-size: 13px; margin-top: 4px; }
+    .card {
+      background: white; border-radius: 12px; padding: 20px; margin: 15px 0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08); display: flex; justify-content: space-between;
+      align-items: center; flex-wrap: wrap;
+    }
+    .platform {
+      font-weight: 700; color: white; padding: 4px 12px; border-radius: 20px;
+      font-size: 14px; background: #3498db;
+    }
+    .platform.cf { background: #1f8acb; }
+    .platform.atc { background: #5b8c5a; }
+    .platform.uoj { background: #c0392b; }
+    .platform.nowcoder { background: #00a6a6; }
+    .info { flex: 1; margin-left: 15px; }
+    .title { font-size: 18px; font-weight: 600; color: #2c3e50; }
+    .time { font-size: 14px; color: #7f8c8d; margin-top: 5px; }
+    .countdown { font-weight: 700; color: #e74c3c; margin-left: auto; min-width: 120px; text-align: right; }
+    .status-ended { font-weight: 700; color: #95a5a6; margin-left: auto; min-width: 120px; text-align: right; }
+    .section-title { color: #2c3e50; margin: 35px 0 10px; border-bottom: 1px solid #dfe6e9; padding-bottom: 8px; }
+    a { text-decoration: none; color: inherit; }
+    .error { text-align: center; color: #e74c3c; padding: 20px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>📅 <span id="heading"></span></h1>
+  <div class="meta" id="timezone-meta"></div>
+  <div class="meta" id="last-updated-meta"></div>
+  <h2 class="section-title" id="upcoming-title"></h2>
+  <div id="upcoming-container"></div>
+  <h2 class="section-title" id="finished-title"></h2>
+  <div id="finished-container"></div>
+</div>
+
+<!-- DATA_SCRIPT -->
+
+<script>
+  // 从注入的全局变量获取数据
+  const translations = window.translations;
+  const serverLanguage = window.serverLanguage;
+  const serverTimezone = window.serverTimezone;
+  const contestsData = window.contestsData;
+  const generatedAt = window.generatedAt;
+
+  // 设置本地化文本
+  document.getElementById('heading').textContent = translations.heading;
+  document.getElementById('upcoming-title').textContent = translations.upcomingTitle;
+  document.getElementById('finished-title').textContent = translations.finishedTitle;
+  document.getElementById('timezone-meta').textContent = translations.timezoneLabel + ': ' + serverTimezone;
+  if (generatedAt) {
+    document.getElementById('last-updated-meta').textContent = translations.lastUpdatedLabel + ': ' + formatDateTimeWithSeconds(generatedAt);
+  }
+
+  // 格式化函数
+  function formatDateTime(ts) {
+    if (window.Intl && Intl.DateTimeFormat) {
+      return new Intl.DateTimeFormat(serverLanguage === 'en' ? 'en-US' : 'zh-CN', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false,
+        timeZone: serverTimezone
+      }).format(new Date(ts * 1000));
+    }
+    return '';
+  }
+  function formatDateTimeWithSeconds(ts) {
+    if (window.Intl && Intl.DateTimeFormat) {
+      return new Intl.DateTimeFormat(serverLanguage === 'en' ? 'en-US' : 'zh-CN', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+        timeZone: serverTimezone
+      }).format(new Date(ts * 1000));
+    }
+    return '';
+  }
+
+  // 平台样式类
+  const platformClassMap = {
+    'Codeforces': 'cf',
+    'AtCoder': 'atc',
+    'UOJ': 'uoj',
+    'Nowcoder': 'nowcoder'
+  };
+  function platformClass(platform) { return platformClassMap[platform] || ''; }
+
+  // 创建卡片
+  function createCard(contest, isFinished) {
+    const card = document.createElement('a');
+    card.className = 'card';
+    card.href = contest.url || '#';
+    card.target = '_blank';
+
+    const platformSpan = document.createElement('span');
+    platformSpan.className = 'platform ' + platformClass(contest.platform);
+    platformSpan.textContent = contest.platform;
+    card.appendChild(platformSpan);
+
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'info';
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'title';
+    titleDiv.textContent = contest.title;
+    const timeDiv = document.createElement('div');
+    timeDiv.className = 'time';
+    timeDiv.textContent = formatDateTime(contest.start_time) + ' ~ ' + formatDateTime(contest.end_time);
+    infoDiv.appendChild(titleDiv);
+    infoDiv.appendChild(timeDiv);
+    card.appendChild(infoDiv);
+
+    if (isFinished) {
+      const endedDiv = document.createElement('div');
+      endedDiv.className = 'status-ended';
+      endedDiv.textContent = translations.ended;
+      card.appendChild(endedDiv);
+    } else {
+      const countdownDiv = document.createElement('div');
+      countdownDiv.className = 'countdown';
+      countdownDiv.setAttribute('data-start', contest.start_time);
+      card.appendChild(countdownDiv);
+    }
+
+    return card;
+  }
+
+  function renderContests() {
+    const upcomingContainer = document.getElementById('upcoming-container');
+    const finishedContainer = document.getElementById('finished-container');
+    upcomingContainer.innerHTML = '';
+    finishedContainer.innerHTML = '';
+
+    if (!contestsData.upcoming || contestsData.upcoming.length === 0) {
+      upcomingContainer.innerHTML = '<p style="text-align:center">' + translations.emptyUpcoming + '</p>';
+    } else {
+      contestsData.upcoming.forEach(c => upcomingContainer.appendChild(createCard(c, false)));
+    }
+
+    if (!contestsData.finished || contestsData.finished.length === 0) {
+      finishedContainer.innerHTML = '<p style="text-align:center">' + translations.emptyFinished + '</p>';
+    } else {
+      // 按照 PHP 逻辑：已结束的逆序显示
+      [...contestsData.finished].reverse().forEach(c => finishedContainer.appendChild(createCard(c, true)));
+    }
+  }
+
+  // 倒计时更新
+  function calcCountdown(startTs) {
+    const diff = startTs * 1000 - Date.now();
+    if (diff <= 0) return translations.running;
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    return d + translations.day + ' ' + h + translations.hour + ' ' + m + translations.minute + ' ' + s + translations.second;
+  }
+
+  function updateCountdowns() {
+    document.querySelectorAll('.countdown').forEach(el => {
+      const start = parseInt(el.getAttribute('data-start'));
+      el.textContent = calcCountdown(start);
+    });
+  }
+
+  renderContests();
+  setInterval(updateCountdowns, 1000);
+  updateCountdowns();
+</script>
+</body>
+</html>

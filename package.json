@@ -1,0 +1,42 @@
+{
+  "name": "oi-contest-schedule",
+  "displayName": "OI Contest Schedule",
+  "description": "View upcoming and finished OI contests in VS Code",
+  "version": "1.0.0",
+  "publisher": "your-name",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "oiContestSchedule.show",
+        "title": "OI Contest Schedule: Show"
+      }
+    ],
+    "configuration": {
+      "title": "OI Contest Schedule",
+      "properties": {
+        "oiContestSchedule.jsonUrl": {
+          "type": "string",
+          "default": "https://raw.githubusercontent.com/hanyixuanten/OI-contest-fetch/master/contests_all.json",
+          "description": "URL of the contests JSON feed"
+        },
+        "oiContestSchedule.cacheMinutes": {
+          "type": "number",
+          "default": 5,
+          "minimum": 0,
+          "description": "Cache lifetime in minutes (0 to disable cache)"
+        },
+        "oiContestSchedule.timezone": {
+          "type": "string",
+          "default": "",
+          "description": "Timezone (IANA name, e.g. Asia/Shanghai). Leave empty to auto-detect from system."
+        }
+      }
+    }
+  }
+}
