@@ -22,7 +22,7 @@
       "properties": {
         "oiContestSchedule.jsonUrl": {
           "type": "string",
-          "default": "https://raw.githubusercontent.com/hanyixuanten/OI-contest-fetch/master/contests_all.json",
+          "default": "https://raw.githubusercontent.com/Vb-Lg/OI-contest-fetch/master/contests_all.json",
           "description": "URL of the contests JSON feed"
         },
         "oiContestSchedule.cacheMinutes": {
